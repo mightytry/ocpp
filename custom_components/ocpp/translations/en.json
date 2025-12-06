@@ -22,6 +22,7 @@
                 "description": "If you need help with the configuration have a look here: https://github.com/lbbrhzn/ocpp",
                 "data": {
                     "cpid": "Charge point identity",
+                    "remote_id_tag": "Remote ID Tag (leave empty for auto-generation)",
                     "max_current": "Maximum charging current",
                     "meter_interval": "Charging sample interval (seconds)",
                     "monitored_variables_autoconfig": "Automatic detection of OCPP Measurands",
@@ -61,7 +62,8 @@
         },
         "error": {
             "auth": "Username/Password is wrong.",
-            "no_measurands_selected": "No measurand selected: please select at least one"
+            "no_measurands_selected": "No measurand selected: please select at least one",
+            "too_long": "Value exceeds maximum length of 32 characters"
         },
         "abort": {
             "single_instance_allowed": "Only a single instance is allowed",

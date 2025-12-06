@@ -65,12 +65,6 @@ async def test_chargepoint_uses_custom_remote_id_tag(
         srv_cp.get_authorization_status(custom_tag) == AuthorizationStatus.accepted.value
     ), f"Custom remote_id_tag '{custom_tag}' should be accepted"
 
-    # Verify a different tag is not automatically accepted
-    assert (
-        srv_cp.get_authorization_status("DIFFERENT_TAG") != AuthorizationStatus.accepted.value
-        or srv_cp.get_authorization_status("DIFFERENT_TAG") == AuthorizationStatus.accepted.value
-    ), "Other tags should follow default authorization rules"
-
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -107,8 +101,8 @@ async def test_chargepoint_generates_random_tag_when_none_provided(
     # Verify a random tag was generated (should be 20 characters uppercase + digits)
     assert hasattr(srv_cp, "_remote_id_tag")
     assert len(srv_cp._remote_id_tag) == 20
-    assert srv_cp._remote_id_tag.isupper() or srv_cp._remote_id_tag.isdigit() or srv_cp._remote_id_tag.isalnum()
-    
+    assert srv_cp._remote_id_tag.isalnum() and srv_cp._remote_id_tag.isupper()
+
     # Verify the generated tag is accepted
     assert (
         srv_cp.get_authorization_status(srv_cp._remote_id_tag)
@@ -116,7 +110,7 @@ async def test_chargepoint_generates_random_tag_when_none_provided(
     )
 
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "setup_config_entry",
     [{"port": 9028, "cp_id": "CP_LONG_TAG", "cms": "cms_long_tag"}],
@@ -152,10 +146,10 @@ async def test_chargepoint_truncates_overlong_tag(
     # Verify the tag was truncated to 32 characters
     assert len(srv_cp._remote_id_tag) == 32
     assert srv_cp._remote_id_tag == "A" * 32
-    
+
     # Verify warning was logged
     assert any("remote_id_tag too long" in record.message for record in caplog.records)
-    
+
     # Verify the truncated tag is accepted
     assert (
         srv_cp.get_authorization_status(srv_cp._remote_id_tag)
