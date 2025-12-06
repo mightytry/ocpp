@@ -156,6 +156,7 @@ class ChargerSystemSettings:
     force_smart_charging: bool
     connection: int | None = None  # number of this connection in central server
     num_connectors: int = DEFAULT_NUM_CONNECTORS
+    remote_id_tag: str = ""
 
 
 @dataclass

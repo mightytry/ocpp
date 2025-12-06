@@ -24,8 +24,6 @@ from .ocppv201 import ChargePoint as ChargePointv201
 
 from .const import (
     CentralSystemSettings,
-    CONF_REMOTE_ID_TAG,
-    CONFIG,
     DOMAIN,
     OCPP_2_0,
     ChargerSystemSettings,
@@ -267,12 +265,8 @@ class CentralSystem:
                 _LOGGER.error(f"Failed to setup charger {cp_id}: {str(e)}")
                 return
 
-            # Get remote_id_tag from options or data or config
-            remote_id_tag = (
-                self.entry.options.get(CONF_REMOTE_ID_TAG)
-                or self.entry.data.get(CONF_REMOTE_ID_TAG)
-                or self.hass.data.get(DOMAIN, {}).get(CONFIG, {}).get(CONF_REMOTE_ID_TAG)
-            )
+            # Get remote_id_tag from charger settings
+            remote_id_tag = cp_settings.remote_id_tag or None
 
             if websocket.subprotocol and websocket.subprotocol.startswith(OCPP_2_0):
                 charge_point = ChargePointv201(

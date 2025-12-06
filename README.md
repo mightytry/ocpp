@@ -17,3 +17,17 @@ Documentation can be found here [home-assistant-ocpp.readthedocs.io](https://hom
 <a href="https://www.buymeacoffee.com/lbbrhzn" target="_blank">
   <img src="https://cdn.buymeacoffee.com/buttons/default-black.png" alt="Buy Me A Coffee" width="150px">
 </a>
+
+## Configuration
+
+### Remote Id Tag
+
+The integration allows you to configure a **Remote Id Tag** for each charger that is used for remote start transactions. This can be set during charger setup.
+
+- **Maximum Length**: 32 characters
+- **Default Behavior**: If not specified, a random 20-character uppercase alphanumeric tag is generated for each charger
+- **Configuration**: 
+  - Set during charger configuration when a charger connects for the first time
+  - Each charger can have its own unique Remote Id Tag
+
+The Remote Id Tag is validated during configuration and will be rejected if it exceeds 32 characters. For defensive purposes, if an overlong tag is provided from another source, it will be truncated to 32 characters with a warning logged.

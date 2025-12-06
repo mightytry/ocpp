@@ -237,3 +237,62 @@ async def test_failed_config_flow(hass, error_on_get_data):
 #
 #     # Verify that the options were updated
 #     assert entry.options == {BINARY_SENSOR: True, SENSOR: False, SWITCH: True}
+
+
+# Update to test_remote_id_tag_validation - should now test in charger flow
+
+async def test_remote_id_tag_validation(hass, bypass_get_data):
+    """Test remote_id_tag length validation in charger config flow."""
+    from custom_components.ocpp.const import CONF_REMOTE_ID_TAG
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    # Setup central system first
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        data=MOCK_CONFIG_CS,
+        entry_id="test_cms_tag",
+        title="test_cms_tag",
+        version=2,
+        minor_version=0,
+    )
+    if hass.data.get(DOMAIN) is None:
+        hass.data.setdefault(DOMAIN, {})
+    config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+    
+    entry = hass.config_entries._entries.get_entries_for_domain(DOMAIN)[0]
+    info = {"cp_id": "test_cp_id_tag", "entry": entry}
+    
+    # Start charger discovery flow
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": config_entries.SOURCE_INTEGRATION_DISCOVERY},
+        data=info,
+    )
+
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["step_id"] == "cp_user"
+
+    # Test with a tag that's too long (> 32 characters)
+    cp_input = MOCK_CONFIG_CP.copy()
+    cp_input[CONF_REMOTE_ID_TAG] = "A" * 33  # 33 characters
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input=cp_input
+    )
+
+    # Should show error for too long tag
+    assert result["type"] == data_entry_flow.FlowResultType.FORM
+    assert result["errors"] == {CONF_REMOTE_ID_TAG: "too_long"}
+
+    # Test with valid tag length (32 characters)
+    cp_input[CONF_REMOTE_ID_TAG] = "A" * 32
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input=cp_input
+    )
+
+    # Should succeed
+    assert result["type"] == data_entry_flow.FlowResultType.ABORT
+    # Verify tag was stored in charger config
+    assert entry.data[CONF_CPIDS][0]["test_cp_id_tag"][CONF_REMOTE_ID_TAG] == "A" * 32
