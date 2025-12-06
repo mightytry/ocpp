@@ -560,6 +560,26 @@ class CentralSystem:
             )
         return False
 
+    async def set_remote_id_tag(self, id: str, value: str):
+        """Set the remote ID tag for a charger."""
+        # allow id to be either cpid or cp_id
+        cp_id = self.cpids.get(id, id)
+
+        if cp_id in self.charge_points:
+            self.charge_points[cp_id]._remote_id_tag = value
+            self.charge_points[cp_id]._metrics[(0, cstat.remote_id_tag.value)].value = value
+            return True
+        return False
+
+    def get_remote_id_tag(self, id: str) -> str | None:
+        """Get the remote ID tag for a charger."""
+        # allow id to be either cpid or cp_id
+        cp_id = self.cpids.get(id, id)
+
+        if cp_id in self.charge_points:
+            return self.charge_points[cp_id]._remote_id_tag
+        return None
+
     async def set_charger_state(
         self,
         id: str,
