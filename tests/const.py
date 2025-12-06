@@ -13,6 +13,7 @@ from custom_components.ocpp.const import (
     CONF_MONITORED_VARIABLES_AUTOCONFIG,
     CONF_NUM_CONNECTORS,
     CONF_PORT,
+    CONF_REMOTE_ID_TAG,
     CONF_SKIP_SCHEMA_VALIDATION,
     CONF_SSL,
     CONF_SSL_CERTFILE_PATH,
@@ -40,6 +41,7 @@ MOCK_CONFIG_CS = {
 
 MOCK_CONFIG_CP = {
     CONF_CPID: "test_cpid",
+    CONF_REMOTE_ID_TAG: "",
     CONF_IDLE_INTERVAL: 900,
     CONF_MAX_CURRENT: 32,
     CONF_METER_INTERVAL: 60,
@@ -63,6 +65,7 @@ MOCK_CONFIG_FLOW = {
         {
             "test_cp_id": {
                 CONF_CPID: "test_cpid",
+                CONF_REMOTE_ID_TAG: "",
                 CONF_IDLE_INTERVAL: 900,
                 CONF_MAX_CURRENT: 32,
                 CONF_METER_INTERVAL: 60,
@@ -93,6 +96,7 @@ MOCK_CONFIG_DATA = {
 # Mock a charger that can be appended to config data
 MOCK_CONFIG_CP_APPEND = {
     CONF_CPID: "test_cpid",
+    CONF_REMOTE_ID_TAG: "",
     CONF_IDLE_INTERVAL: 900,
     CONF_MAX_CURRENT: 32,
     CONF_METER_INTERVAL: 60,

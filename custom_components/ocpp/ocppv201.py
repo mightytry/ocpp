@@ -95,6 +95,7 @@ class ChargePoint(cp):
         entry: ConfigEntry,
         central: CentralSystemSettings,
         charger: ChargerSystemSettings,
+        remote_id_tag: str | None = None,
     ):
         """Instantiate a ChargePoint."""
 
@@ -106,6 +107,7 @@ class ChargePoint(cp):
             entry,
             central,
             charger,
+            remote_id_tag,
         )
         self._tx_start_time = {}
         self._global_to_evse: dict[int, tuple[int, int]] = {}

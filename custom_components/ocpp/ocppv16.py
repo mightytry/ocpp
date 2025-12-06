@@ -90,6 +90,7 @@ class ChargePoint(cp):
         entry: ConfigEntry,
         central: CentralSystemSettings,
         charger: ChargerSystemSettings,
+        remote_id_tag: str | None = None,
     ):
         """Instantiate a ChargePoint."""
 
@@ -101,6 +102,7 @@ class ChargePoint(cp):
             entry,
             central,
             charger,
+            remote_id_tag,
         )
         self._active_tx: dict[int, int] = {}  # connector_id -> transaction_id
 

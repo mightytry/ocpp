@@ -17,6 +17,7 @@ CONF_CSID = "csid"
 CONF_DEFAULT_AUTH_STATUS = "default_authorization_status"
 CONF_HOST = ha.CONF_HOST
 CONF_ID_TAG = "id_tag"
+CONF_REMOTE_ID_TAG = "remote_id_tag"
 CONF_ICON = ha.CONF_ICON
 CONF_IDLE_INTERVAL = "idle_interval"
 CONF_MAX_CURRENT = "max_current"
@@ -65,6 +66,7 @@ DOMAIN = "ocpp"
 CONFIG = "config"
 ICON = "mdi:ev-station"
 SLEEP_TIME = 60
+MAX_REMOTE_ID_TAG_LENGTH = 32
 
 # Platforms
 NUMBER = "number"
@@ -154,6 +156,7 @@ class ChargerSystemSettings:
     force_smart_charging: bool
     connection: int | None = None  # number of this connection in central server
     num_connectors: int = DEFAULT_NUM_CONNECTORS
+    remote_id_tag: str = ""
 
 
 @dataclass

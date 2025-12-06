@@ -22,6 +22,7 @@ from .const import (
     CONF_MONITORED_VARIABLES_AUTOCONFIG,
     CONF_NUM_CONNECTORS,
     CONF_PORT,
+    CONF_REMOTE_ID_TAG,
     CONF_SKIP_SCHEMA_VALIDATION,
     CONF_SSL,
     CONF_SSL_CERTFILE_PATH,
@@ -51,6 +52,7 @@ from .const import (
     DEFAULT_WEBSOCKET_PING_TIMEOUT,
     DEFAULT_WEBSOCKET_PING_TRIES,
     DOMAIN,
+    MAX_REMOTE_ID_TAG_LENGTH,
     MEASURANDS,
 )
 
@@ -80,6 +82,7 @@ STEP_USER_CS_DATA_SCHEMA = vol.Schema(
 STEP_USER_CP_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_CPID, default=DEFAULT_CPID): str,
+        vol.Optional(CONF_REMOTE_ID_TAG, default=""): str,
         vol.Required(CONF_MAX_CURRENT, default=DEFAULT_MAX_CURRENT): int,
         vol.Required(
             CONF_MONITORED_VARIABLES_AUTOCONFIG,
@@ -160,28 +163,35 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            # Don't allow duplicate cpids to be used
-            self._async_abort_entries_match({CONF_CPID: user_input[CONF_CPID]})
-
-            cp_data = {
-                **user_input,
-                CONF_NUM_CONNECTORS: self._detected_num_connectors,
-            }
-            cpids_list = self._data.get(CONF_CPIDS, []).copy()
-            cpids_list.append({self._cp_id: cp_data})
-            self._data = {**self._data, CONF_CPIDS: cpids_list}
-
-            if user_input[CONF_MONITORED_VARIABLES_AUTOCONFIG]:
-                self._data[CONF_CPIDS][-1][self._cp_id][CONF_MONITORED_VARIABLES] = (
-                    DEFAULT_MONITORED_VARIABLES
-                )
-                self.hass.config_entries.async_update_entry(
-                    self._entry, data=self._data
-                )
-                return self.async_abort(reason="Added/Updated charge point")
-
+            # Validate remote_id_tag length
+            tag = user_input.get(CONF_REMOTE_ID_TAG, "").strip()
+            if tag and len(tag) > MAX_REMOTE_ID_TAG_LENGTH:
+                errors[CONF_REMOTE_ID_TAG] = "too_long"
             else:
-                return await self.async_step_measurands()
+                # Don't allow duplicate cpids to be used
+                self._async_abort_entries_match({CONF_CPID: user_input[CONF_CPID]})
+
+                # Store the tag (even if empty)
+                user_input[CONF_REMOTE_ID_TAG] = tag
+                cp_data = {
+                    **user_input,
+                    CONF_NUM_CONNECTORS: self._detected_num_connectors,
+                }
+                cpids_list = self._data.get(CONF_CPIDS, []).copy()
+                cpids_list.append({self._cp_id: cp_data})
+                self._data = {**self._data, CONF_CPIDS: cpids_list}
+
+                if user_input[CONF_MONITORED_VARIABLES_AUTOCONFIG]:
+                    self._data[CONF_CPIDS][-1][self._cp_id][CONF_MONITORED_VARIABLES] = (
+                        DEFAULT_MONITORED_VARIABLES
+                    )
+                    self.hass.config_entries.async_update_entry(
+                        self._entry, data=self._data
+                    )
+                    return self.async_abort(reason="Added/Updated charge point")
+
+                else:
+                    return await self.async_step_measurands()
 
         return self.async_show_form(
             step_id="cp_user", data_schema=STEP_USER_CP_DATA_SCHEMA, errors=errors

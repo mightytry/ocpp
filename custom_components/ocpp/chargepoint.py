@@ -63,6 +63,7 @@ from .const import (
     DOMAIN,
     HA_ENERGY_UNIT,
     HA_POWER_UNIT,
+    MAX_REMOTE_ID_TAG_LENGTH,
     UNITS_OCCP_TO_HA,
 )
 
@@ -234,6 +235,7 @@ class ChargePoint(cp):
         entry: ConfigEntry,
         central: CentralSystemSettings,
         charger: ChargerSystemSettings,
+        remote_id_tag: str | None = None,
     ):
         """Instantiate a ChargePoint."""
 
@@ -281,7 +283,18 @@ class ChargePoint(cp):
 
         self._attr_supported_features = prof.NONE
         alphabet = string.ascii_uppercase + string.digits
-        self._remote_id_tag = "".join(secrets.choice(alphabet) for i in range(20))
+        if remote_id_tag:
+            tag = str(remote_id_tag)
+            if len(tag) > MAX_REMOTE_ID_TAG_LENGTH:
+                _LOGGER.warning(
+                    "remote_id_tag too long (%d chars); truncating to %d",
+                    len(tag),
+                    MAX_REMOTE_ID_TAG_LENGTH,
+                )
+                tag = tag[:MAX_REMOTE_ID_TAG_LENGTH]
+            self._remote_id_tag = tag
+        else:
+            self._remote_id_tag = "".join(secrets.choice(alphabet) for i in range(20))
         self.num_connectors: int = DEFAULT_NUM_CONNECTORS
 
     def _init_connector_slots(self, conn_id: int) -> None:
