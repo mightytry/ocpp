@@ -6,6 +6,7 @@ from homeassistant.config_entries import (
     ConfigFlow,
     ConfigFlowResult,
     CONN_CLASS_LOCAL_PUSH,
+    OptionsFlow,
 )
 import voluptuous as vol
 
@@ -22,6 +23,7 @@ from .const import (
     CONF_MONITORED_VARIABLES_AUTOCONFIG,
     CONF_NUM_CONNECTORS,
     CONF_PORT,
+    CONF_REMOTE_ID_TAG,
     CONF_SKIP_SCHEMA_VALIDATION,
     CONF_SSL,
     CONF_SSL_CERTFILE_PATH,
@@ -51,6 +53,7 @@ from .const import (
     DEFAULT_WEBSOCKET_PING_TIMEOUT,
     DEFAULT_WEBSOCKET_PING_TRIES,
     DOMAIN,
+    MAX_REMOTE_ID_TAG_LENGTH,
     MEASURANDS,
 )
 
@@ -62,6 +65,7 @@ STEP_USER_CS_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_SSL_CERTFILE_PATH, default=DEFAULT_SSL_CERTFILE_PATH): str,
         vol.Required(CONF_SSL_KEYFILE_PATH, default=DEFAULT_SSL_KEYFILE_PATH): str,
         vol.Required(CONF_CSID, default=DEFAULT_CSID): vol.All(str, vol.Length(max=20)),
+        vol.Optional(CONF_REMOTE_ID_TAG, default=""): str,
         vol.Required(
             CONF_WEBSOCKET_CLOSE_TIMEOUT, default=DEFAULT_WEBSOCKET_CLOSE_TIMEOUT
         ): int,
@@ -119,17 +123,29 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._measurands: str = ""
         self._detected_num_connectors: int = DEFAULT_NUM_CONNECTORS
 
+    @staticmethod
+    def async_get_options_flow(config_entry: ConfigEntry):
+        """Get the options flow for this handler."""
+        return OptionsFlowHandler(config_entry)
+
     async def async_step_user(self, user_input=None) -> ConfigFlowResult:
         """Handle user central system initiated configuration."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            # Don't allow servers to use same websocket port
-            self._async_abort_entries_match({CONF_PORT: user_input[CONF_PORT]})
-            self._data = user_input
-            # Add placeholder for cpid settings
-            self._data[CONF_CPIDS] = []
-            return self.async_create_entry(title=self._data[CONF_CSID], data=self._data)
+            # Validate remote_id_tag length
+            tag = user_input.get(CONF_REMOTE_ID_TAG, "").strip()
+            if tag and len(tag) > MAX_REMOTE_ID_TAG_LENGTH:
+                errors[CONF_REMOTE_ID_TAG] = "too_long"
+            else:
+                # Don't allow servers to use same websocket port
+                self._async_abort_entries_match({CONF_PORT: user_input[CONF_PORT]})
+                # Store the tag (even if empty)
+                user_input[CONF_REMOTE_ID_TAG] = tag
+                self._data = user_input
+                # Add placeholder for cpid settings
+                self._data[CONF_CPIDS] = []
+                return self.async_create_entry(title=self._data[CONF_CSID], data=self._data)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_CS_DATA_SCHEMA, errors=errors
@@ -214,5 +230,47 @@ class ConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="measurands",
             data_schema=STEP_USER_MEASURANDS_SCHEMA,
+            errors=errors,
+        )
+
+
+class OptionsFlowHandler(OptionsFlow):
+    """Handle options flow for OCPP."""
+
+    def __init__(self, config_entry: ConfigEntry):
+        """Initialize options flow."""
+        self._config_entry = config_entry
+
+    async def async_step_init(self, user_input=None) -> ConfigFlowResult:
+        """Manage the options."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            # Validate remote_id_tag length
+            tag = user_input.get(CONF_REMOTE_ID_TAG, "").strip()
+            if tag and len(tag) > MAX_REMOTE_ID_TAG_LENGTH:
+                errors[CONF_REMOTE_ID_TAG] = "too_long"
+            else:
+                # Update options with the new remote_id_tag
+                return self.async_create_entry(
+                    title="",
+                    data={CONF_REMOTE_ID_TAG: tag},
+                )
+
+        # Get current value from options or data
+        current_tag = self._config_entry.options.get(
+            CONF_REMOTE_ID_TAG,
+            self._config_entry.data.get(CONF_REMOTE_ID_TAG, "")
+        )
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(CONF_REMOTE_ID_TAG, default=current_tag): str,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=options_schema,
             errors=errors,
         )
