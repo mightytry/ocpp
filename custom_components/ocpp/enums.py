@@ -36,6 +36,7 @@ class HAChargerStatuses(str, Enum):
     firmware_status = "Status.Firmware"
     reconnects = "Reconnects"
     id_tag = "Id.Tag"
+    remote_id_tag = "Remote.Id.Tag"
 
 
 class HAChargerDetails(str, Enum):
