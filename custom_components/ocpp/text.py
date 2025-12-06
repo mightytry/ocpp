@@ -10,12 +10,11 @@ from homeassistant.components.text import (
     DOMAIN as TEXT_DOMAIN,
     TextEntity,
     TextEntityDescription,
-    RestoreEntity,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .api import CentralSystem
 from .const import (
@@ -72,7 +71,7 @@ async def async_setup_entry(hass, entry, async_add_devices):
     async_add_devices(entities, False)
 
 
-class ChargePointText(RestoreEntity, TextEntity):
+class ChargePointText(TextEntity, RestoreEntity):
     """Individual text entity for charge point."""
 
     _attr_has_entity_name = False
@@ -107,22 +106,23 @@ class ChargePointText(RestoreEntity, TextEntity):
     async def async_added_to_hass(self) -> None:
         """Handle entity which will be added."""
         await super().async_added_to_hass()
-        
+
         # Get the current value from the charge point if available
         if self.entity_description.key == "remote_id_tag":
             current_value = self.central_system.get_remote_id_tag(self.cpid)
             if current_value:
                 self._attr_native_value = current_value
-        
+
         # Restore state from previous session if no current value
-        if self._attr_native_value is None and (restored := await self.async_get_last_state()):
-            if restored.state:
-                self._attr_native_value = restored.state
-                # Update the central system's charge point with the restored value
-                if self.entity_description.key == "remote_id_tag":
-                    await self.central_system.set_remote_id_tag(
-                        self.cpid, restored.state
-                    )
+        if self._attr_native_value is None:
+            if (last_state := await self.async_get_last_state()) is not None:
+                if last_state.state and last_state.state != "unknown":
+                    self._attr_native_value = last_state.state
+                    # Update the central system's charge point with the restored value
+                    if self.entity_description.key == "remote_id_tag":
+                        await self.central_system.set_remote_id_tag(
+                            self.cpid, last_state.state
+                        )
 
         @callback
         def _maybe_update(*args):
